@@ -52,7 +52,7 @@ const deleteUser = (id) => {
                         <button
                             type="button"
                             class="mx-1 mt-3 inline-flex w-full justify-center rounded-md bg-red-600 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-red-700 dark:text-gray-100 sm:mt-0 sm:w-auto"
-                            @click="deleteUser(data.id)"
+                            @click="deleteUser(data)"
                         >
                             Yes, I'm sure
                         </button>

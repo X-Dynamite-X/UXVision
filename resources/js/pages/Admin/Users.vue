@@ -1,17 +1,19 @@
 <script setup lang="ts">
+import Alerts from '@/components/AllApp/Alerts.vue';
 import DynamicDelete from '@/components/Model/DynamicDelete.vue';
-import DynamicEdit from '@/components/Model/DynamicEdit.vue';
+import DynamicCreate from '@/components/Model/DynamicCreate.vue';
 
+import DynamicEdit from '@/components/Model/DynamicEdit.vue';
 import DataTable from '@/components/Table/DataTable.vue';
 import TBody from '@/components/Table/TBody.vue';
 import Thedar from '@/components/Table/Thedar.vue';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Head, usePage } from '@inertiajs/vue3';
-import { PencilIcon, TrashIcon } from 'lucide-vue-next';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { PencilIcon, TrashIcon, UserPlus } from 'lucide-vue-next';
 import { computed, ref } from 'vue';
-
 // تعريف الأنواع
 interface ColumnName {
     name: string;
@@ -109,7 +111,7 @@ const columns: Column[] = [
         showInEdit: false,
         required: true,
         showInTabel: false,
-        disabled: true,
+        disabled: false,
         placeholder: 'Enter Password',
     },
     {
@@ -121,40 +123,117 @@ const columns: Column[] = [
         showInCreate: true,
         showInEdit: false,
         required: true,
-        disabled: true,
+        disabled: false,
         placeholder: 'Enter password Confirmation',
     },
 ];
 const page = usePage<{ users: User[] }>();
 const users = computed(() => page.props.users);
 
+const showCreateModel = ref(false);
 const showEditModel = ref(false);
+
 const showDeleteModel = ref(false);
+const showAlert = ref(false);
+const alertMessage = ref('');
+const alertTitle = ref('');
 
 const modelData = ref<ModelData>({});
+
+const openCreateModel = () => {
+    showCreateModel.value = true;
+    modelData.value = {
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
+    };
+};
+const createUser = (data: ModelData) => {
+    console.log(data);
+
+    router.post('/admin/users',data,{
+        onSuccess: (data) => {
+            console.log(data);
+            closeModal();
+
+            showAlert.value = true;
+            alertTitle.value = 'success';
+            alertMessage.value = 'User created successfully.';
+            setTimeout(() => {
+                showAlert.value = false;
+            }, 3000);
+        },
+        onError: (data) => {
+            errors.value = data;
+
+            showAlert.value = true;
+            alertTitle.value = 'error';
+            alertMessage.value = 'Failed to create user.';
+            setTimeout(() => {
+                showAlert.value = false;
+            }, 3000);
+            console.log(data);
+        },
+    });
+
+};
 
 const openEditModel = (data: ModelData) => {
     showEditModel.value = true;
     modelData.value = { ...data };
 };
-
 const updateData = (updatedData: ModelData) => {
     console.log(updatedData);
-    closeModal();
-    modelData.value = { ...updatedData };
+    router.put(`/admin/users/${updatedData.id}`, updatedData, {
+        onSuccess: (data) => {
+            console.log(data);
+            closeModal();
+
+            showAlert.value = true;
+            alertTitle.value = 'success';
+            alertMessage.value = 'User updated successfully.';
+            setTimeout(() => {
+                showAlert.value = false;
+            }, 3000);
+        },
+        onError: (data) => {
+            errors.value = data;
+
+            showAlert.value = true;
+            alertTitle.value = 'error';
+            alertMessage.value = 'Failed to update user.';
+            setTimeout(() => {
+                showAlert.value = false;
+            }, 3000);
+            console.log(data);
+        },
+    });
 };
 const openDeleteModel = (data: ModelData) => {
     console.log(data);
     showDeleteModel.value = true;
     modelData.value = { ...data };
 };
+
 const deleteData = (data: ModelData) => {
-     
+    router.delete(`/admin/users/${data.id}`, {
+        onSuccess: (data) => {
+            closeModal();
 
-    closeModal();
-
+            showAlert.value = true;
+            alertTitle.value = 'success';
+            alertMessage.value = 'User deleted successfully.';
+            setTimeout(() => {
+                showAlert.value = false;
+            }, 3000);
+            console.log(data);
+        },
+    });
 };
 const closeModal = () => {
+    errors.value = null;
+    showCreateModel.value = false;
     showEditModel.value = false;
     showDeleteModel.value = false;
 };
@@ -164,8 +243,13 @@ const closeModal = () => {
     <Head title="Users" />
 
     <AppLayout :breadcrumbs="breadcrumbs">
+        <Alerts v-if="showAlert" :title="alertTitle" :message="alertMessage" />
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <div class="relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow">
+                <Button @click="openCreateModel" variant="outline" size="lg" class="w-full" >
+                    <UserPlus     class="" />
+                     <span class="">Create</span>
+                </Button>
                 <div class="overflow-x-auto">
                     <DataTable
                         :data="users"
@@ -216,6 +300,15 @@ const closeModal = () => {
                             </Label>
                         </template>
                     </DynamicDelete>
+                    <DynamicCreate
+                        :show="showCreateModel"
+                        @close="closeModal"
+                        title="Create User"
+                        @create="createUser"
+                        :columns="columns"
+                        :errors="errors"
+                        :data="modelData"
+                    />
                 </div>
             </div>
         </div>

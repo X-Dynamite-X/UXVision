@@ -1,135 +1,87 @@
-<script setup>
-import { ref, defineEmits } from "vue";
-import InputForm from "@/components/FieldRequst/InputForm.vue";
-import { useAdminStore } from "@/Stores/admin";
-const adminStore = useAdminStore();
-
+<script setup lang="ts">
+import InputError from '@/components/InputError.vue';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { defineEmits, defineProps } from 'vue';
 // Props
+interface Props {
+    show: boolean;
+    title: string;
+    columns: Column[];
+    data: Record<string, any> | null;
 
-const prpos = defineProps({
-    show: {
-        type: Boolean,
-        required: true,
-    },
-    title: {
-        type: String,
-        default: "Info",
-    },
-    columns: {
-        type: Array,
-        required: true,
-    },
-    data: {
-        type: Object,
-        required: true,
-    },
-});
+    errors: Record<string, string> | null;
+}
+const props = defineProps<Props>();
 
-const emit = defineEmits(["close", "create"]);
+const emit = defineEmits<{
+    (e: 'close'): void;
+    (e: 'create', data: Record<string, any>): void;
+}>();
 
 const closeModal = () => {
-    console.log(adminStore.errors);
-    adminStore.clearErrors();
-    emit("close");
+    emit('close');
 };
+
 const createModal = () => {
-    emit("create", prpos.data); // إرسال البيانات إلى المكون الأعلى
+    console.log( props.data);
+
+    emit('create',  props.data);
 };
 </script>
 <template>
-    <div
-        v-if="prpos.show"
-        class="fixed inset-0 z-10 overflow-y-auto"
-        aria-labelledby="modal-title"
-        role="dialog"
-        aria-modal="true"
-    >
-        <div
-            class="flex min-h-full items-center justify-center p-4 text-center sm:p-0"
-        >
-            <div
-                class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-700 shadow-xl transition-all sm:w-6/12"
-            >
-                <!-- Header -->
-                <div class="px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div
-                            class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left w-full"
-                        >
-                            <h3
-                                class="text-base text-center font-semibold leading-6 text-gray-900 dark:text-gray-100"
-                                id="modal-title"
-                            >
-                                {{ prpos.title }}
-                            </h3>
-                            <!-- Content -->
-                            <div class="mt-4">
-                                <slot name="content">
-                                    <!-- محتوى افتراضي إذا لم يتم تقديم محتوى داخل الـ slot -->
-                                    <div
-                                        v-for="column in prpos.columns"
-                                        :key="column.key"
-                                    >
-                                        <slot
-                                            :name="`column-${column.key}`"
-                                            :data="data"
-                                            :column="column"
-                                        >
-                                            <!-- العرض الافتراضي إذا لم يكن هناك slot -->
-                                            <InputForm
-                                                v-if="
-                                                    column.key !== 'id' &&
-                                                    column.showInCreate
-                                                "
-                                                :label="column.label"
-                                                :name="column.name"
-                                                :id="column.key"
-                                                :type="column.type"
-                                                :modelValue="
-                                                    prpos.data[column.key]
-                                                "
-                                                v-model="prpos.data[column.key]"
-                                                :placeholder="
-                                                    column.placeholder
-                                                "
-                                                :required="column.required"
-                                                :errorMessage="
-                                                    adminStore.errors[
-                                                        column.name
-                                                    ] || null
-                                                "
-                                                :autocomplete="
-                                                    column.autocomplete
-                                                "
-                                            />
-                                        </slot>
+    <div v-if="show" class="fixed inset-0 z-10 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg shadow-xl transition-all">
+                <Card class="rounded-xl">
+                    <CardHeader class="px-10 pb-0 pt-8 text-center">
+                        <CardTitle class="text-xl">{{ title }}</CardTitle>
+                        <CardDescription v-if="description">
+                            {{ description }}
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent class="px-10 py-8">
+                        <div class="flex flex-col gap-6">
+                            <div class="grid gap-6">
+                                <div class="grid gap-2">
+                                    <div v-for="column in columns" :key="column.key">
+                                        <Label v-if="column.key !== 'id' && column.showInCreate">{{ column.label }}</Label>
+                                        <Input
+                                            v-if="column.key !== 'id' && column.showInCreate"
+                                            :defaultValue="data[column.key]"
+                                            :modelValue="data[column.key] "
+                                            :placeholder="column.placeholder"
+                                            :required="column.required"
+                                            :autocomplete="column.autocomplete"
+                                            :disabled="column.disabled"
+                                            :type="column.type"
+                                            @update:modelValue="(value) => (data[column.key] = value)"
+
+                                        />
+                                        <InputError :message="errors?.[column.name]" v-if="errors?.[column.name]" />
                                     </div>
-                                </slot>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <div
-                    class="bg-gray-50 dark:bg-gray-800 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6"
-                >
-                    <button
-                        type="button"
-                        class="mt-3 mx-1 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-600 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto"
-                        @click="closeModal()"
-                    >
-                        Cancel
-                    </button>
-                    <slot name="actionsCreateBtn">
+                    </CardContent>
+                    <CardFooter class="border-t-2 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                         <button
                             type="button"
-                            class="mt-3 mx-1 inline-flex w-full justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-700 sm:mt-0 sm:w-auto"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-600 dark:text-gray-100 dark:hover:bg-gray-500 sm:mt-0 sm:w-auto"
+                            @click="closeModal()"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            class="mx-1 mt-3 inline-flex w-full justify-center rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-green-700 dark:text-gray-100 sm:mt-0 sm:w-auto"
                             @click="createModal()"
                         >
                             Create
                         </button>
-                    </slot>
-                    <slot name="actions"></slot>
-                </div>
+                    </CardFooter>
+                </Card>
             </div>
         </div>
     </div>

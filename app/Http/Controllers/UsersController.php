@@ -6,6 +6,10 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Requests\Admin\Users\{StoreRequest, UpdateRequest};
+
+use Illuminate\Support\Facades\Redirect;
+
 class UsersController extends Controller
 {
     /**
@@ -20,37 +24,32 @@ class UsersController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+
+    public function store(StoreRequest $request)
     {
-        //
+        User::create(
+            [
+                "name" => $request->name,
+                "email" => $request->email,
+                "password" => bcrypt($request->password),
+
+            ]
+        );
+
+        // return to_route("users.index") ;
+        return Redirect::back();
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(User $user)
+    public function update(UpdateRequest $request, User $user)
     {
-        //
+        $user->update($request->all());
+        return to_route("users.index");
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, User $user)
-    {
-        //
-    }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(User $user)
     {
-        //
         $user->delete();
-        return redirect()->back()->with('success', 'User deleted successfully.');
+        return to_route("users.index");
     }
 }
