@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import Alerts from '@/components/AllApp/Alerts.vue';
-import DynamicDelete from '@/components/Model/DynamicDelete.vue';
 import DynamicCreate from '@/components/Model/DynamicCreate.vue';
-
+import DynamicDelete from '@/components/Model/DynamicDelete.vue';
 import DynamicEdit from '@/components/Model/DynamicEdit.vue';
 import DataTable from '@/components/Table/DataTable.vue';
 import TBody from '@/components/Table/TBody.vue';
 import Thedar from '@/components/Table/Thedar.vue';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { PencilIcon, TrashIcon, UserPlus } from 'lucide-vue-next';
-import { computed, ref } from 'vue';
+import { ChevronDown, PencilIcon, Search, TrashIcon, UserPlus } from 'lucide-vue-next';
+import { computed, ref, watch } from 'vue';
 // تعريف الأنواع
 interface ColumnName {
     name: string;
@@ -143,16 +143,16 @@ const modelData = ref<ModelData>({});
 const openCreateModel = () => {
     showCreateModel.value = true;
     modelData.value = {
-        name: "",
-        email: "",
-        password: "",
-        password_confirmation: "",
+        name: '',
+        email: '',
+        password: '',
+        password_confirmation: '',
     };
 };
 const createUser = (data: ModelData) => {
     console.log(data);
 
-    router.post('/admin/users',data,{
+    router.post('/admin/users', data, {
         onSuccess: (data) => {
             console.log(data);
             closeModal();
@@ -176,7 +176,6 @@ const createUser = (data: ModelData) => {
             console.log(data);
         },
     });
-
 };
 
 const openEditModel = (data: ModelData) => {
@@ -237,6 +236,11 @@ const closeModal = () => {
     showEditModel.value = false;
     showDeleteModel.value = false;
 };
+
+const itemsPerPage = ref(10);
+watch(itemsPerPage, (newValue) => {
+    console.log(`Items per page changed to: ${newValue}`);
+});
 </script>
 
 <template>
@@ -246,13 +250,48 @@ const closeModal = () => {
         <Alerts v-if="showAlert" :title="alertTitle" :message="alertMessage" />
         <div class="flex h-full flex-1 flex-col gap-4 p-4">
             <div class="relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow">
-                <Button @click="openCreateModel" variant="outline" size="lg" class="w-full" >
-                    <UserPlus     class="" />
-                     <span class="">Create</span>
+                <Button @click="openCreateModel" variant="outline" size="lg" class="w-full">
+                    <UserPlus class="" />
+                    <span class="">Create</span>
                 </Button>
-                <div class="overflow-x-auto">
+                <div class="flex-column flex-wrap items-center justify-between space-x-4 space-y-4 pb-4 sm:flex-row sm:space-y-0">
+                    <div class="mx-4 flex w-full max-w-sm items-center space-x-2">
+                        <div class="relative w-full">
+                            <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                <Search class="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <Input
+                                id="searchInput"
+                                type="search"
+                                placeholder="Search users..."
+                                class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 pr-4 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+                            />
+                        </div>
+
+                        <div class="items-center space-x-2">
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" class="flex items-center gap-2">
+                                        <span>Show: {{ itemsPerPage }}</span>
+                                        <ChevronDown class="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent class="w-40">
+                                    <DropdownMenuItem
+                                        v-for="size in [5, 10, 15, 25, 50]"
+                                        :key="size"
+                                        @click="itemsPerPage = size"
+                                        :class="{ 'bg-accent': itemsPerPage === size }"
+                                    >
+                                        {{ size }} items
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    </div>
+
                     <DataTable
-                        :data="users"
+                        :data="users.data"
                         :columnsName="columnsName"
                         :columns="columns"
                         :loading="false"
@@ -278,6 +317,7 @@ const closeModal = () => {
                             </TBody>
                         </template>
                     </DataTable>
+
                     <DynamicEdit
                         :data="modelData"
                         :data2="data2"
