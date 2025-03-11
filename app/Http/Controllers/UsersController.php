@@ -15,13 +15,37 @@ class UsersController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
-        $user = User::paginate(10, ["id", "name", "email"]);
-        return Inertia::render('Admin/Users', [
-            'users' => $user
+        $perPage = $request->query('per_page', 10);
+        $search = $request->query('search', '');
 
+        // Validate and limit the per_page parameter
+        $perPage = in_array($perPage, [5, 10, 15, 25, 50]) ? $perPage : 10;
+
+        $users = User::query()
+            ->select(['id', 'name', 'email', 'created_at'])
+            ->when($search, function ($query) use ($search) {
+                $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('email', 'like', '%' . $search . '%');
+            })
+            ->orderBy('created_at', 'asc')
+            ->paginate($perPage)
+            ->through(fn($user)=>
+            [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'created_at' => $user->created_at->format('Y-m-d H:i:s'),
+            ])
+            ->withQueryString();
+
+        return Inertia::render('Admin/Users', [
+            'users' => $users,
+            'filters' => [
+                'per_page' => $perPage,
+                'search' => $search,
+            ],
         ]);
     }
 

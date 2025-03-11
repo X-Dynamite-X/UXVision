@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, usePage } from '@inertiajs/vue3';
-import { ChevronDown, PencilIcon, Search, TrashIcon, UserPlus } from 'lucide-vue-next';
+import { ChevronDown, ChevronLeft, ChevronRight, PencilIcon, Search, TrashIcon, UserPlus } from 'lucide-vue-next';
 import { computed, ref, watch } from 'vue';
 // تعريف الأنواع
 interface ColumnName {
@@ -238,9 +238,41 @@ const closeModal = () => {
 };
 
 const itemsPerPage = ref(10);
+const search = ref('');
+
 watch(itemsPerPage, (newValue) => {
-    console.log(`Items per page changed to: ${newValue}`);
+    router.get(
+        route('users.index', {
+            per_page: newValue,
+            search: search.value,
+        }),
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+        },
+    );
 });
+
+//////////////////
+
+import debounce from 'lodash/debounce';
+watch(
+    search,
+    debounce(function (newValue) {
+        router.get(
+            '/admin/users',
+            {
+                search: newValue,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                replace: true,
+            },
+        );
+    }, 500),
+);
 </script>
 
 <template>
@@ -261,7 +293,9 @@ watch(itemsPerPage, (newValue) => {
                                 <Search class="h-5 w-5 text-muted-foreground" />
                             </div>
                             <Input
-                                id="searchInput"
+                                @input="search = $event.target.value"
+                                v-model="search"
+                                id="search"
                                 type="search"
                                 placeholder="Search users..."
                                 class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-10 pr-4 text-base ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
@@ -317,6 +351,33 @@ watch(itemsPerPage, (newValue) => {
                             </TBody>
                         </template>
                     </DataTable>
+                    <div class="flex items-center justify-center space-x-2 py-4">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            class="gap-1 text-sm"
+                            :disabled="!users.prev_page_url"
+                            @click="router.get(users.prev_page_url)"
+                        >
+                            <ChevronLeft class="h-4 w-4" />
+                            Previous
+                        </Button>
+
+                        <div class="flex items-center gap-1 text-sm text-muted-foreground">
+                            <span>Page {{ users.current_page }} of {{ users.last_page }}</span>
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            class="gap-1 text-sm"
+                            :disabled="!users.next_page_url"
+                            @click="router.get(users.next_page_url)"
+                        >
+                            Next
+                            <ChevronRight class="h-4 w-4" />
+                        </Button>
+                    </div>
 
                     <DynamicEdit
                         :data="modelData"
