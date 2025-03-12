@@ -1,6 +1,7 @@
 <script setup lang="ts">
+
 interface AlertProps {
-    title: 'success' | 'error' | 'warning' | 'info';
+    title: string ;
     message: string;
 }
 
